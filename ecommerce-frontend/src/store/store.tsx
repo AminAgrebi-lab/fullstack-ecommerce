@@ -3,8 +3,8 @@ import productReducer from './productSlice';
 
 export const store = configureStore({
   reducer: {
-    products: productReducer // ✅ ربط الـ products slice بالـ store
-  }
+    products: productReducer, // ✅ المفتاح يجب أن يكون 'products'
+  },
 });
 
 export type RootState = ReturnType<typeof store.getState>;

@@ -1,7 +1,7 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
-const AddProducts = () => {
+const AddEditProducts = () => {
   // State to store the form input values dynamically
   const [data, setData] = useState({
     name: '',
@@ -10,67 +10,97 @@ const AddProducts = () => {
     description: '',
   });
 
-  // Hook used to redirect the user after a successful product addition
   const navigate = useNavigate();
+  // The id exists ONLY in edit mode (/products/edit/:id), undefined in add mode
+  const { id } = useParams<{ id: string }>();
 
-  // Handler to update the state whenever any input field changes.
-  // We use e.target.name to dynamically update the matching property in the state object
+  // Base URL from environment variable
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
+  // EDIT mode: fetch the product and prefill the form fields
+  useEffect(() => {
+    if (id) {
+      fetch(`${baseUrl}/products/${id}`)
+        .then((response) => {
+          const responseData = response.json();
+          if (response.ok) return responseData;
+          throw responseData;
+        })
+        .then((product) => {
+          setData({
+            name: product.name,
+            image: product.image,
+            price: String(product.price), // Convert number to string for the input
+            description: product.description,
+          });
+        })
+        .catch((error) => console.error('Error fetching product:', error));
+    }
+  }, [id, baseUrl]);
+
+  // Update the state whenever any input changes (dynamic key via e.target.name)
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setData({
-      ...data, // Spread the existing data
-      [e.target.name]: e.target.value, // Override only the field that changed
+      ...data,
+      [e.target.name]: e.target.value,
     });
   };
 
-  // Separate function to call the POST API that inserts the product into the database
+  // POST API call to insert a NEW product
   const handleAddProduct = () => {
-    // Base URL from environment variable (Vite requires the VITE_ prefix)
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-
-    // Call the Add Product API endpoint
     fetch(`${baseUrl}/products/add`, {
-      method: 'POST', // It is an insert operation, so we must define the method
-      headers: {
-        // Tell the server that we are sending JSON data in the request body
-        'Content-Type': 'application/json',
-      },
-      // Convert the state object into a JSON string to be sent in the body
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
       .then((response) => {
-        // Convert the response into JSON
         const responseData = response.json();
-
-        // If the request succeeded return the data, otherwise throw it as an error
-        if (response.ok) {
-          return responseData;
-        }
+        if (response.ok) return responseData;
         throw responseData;
       })
       .then((responseData) => {
-        // Show the success message sent by the backend in an alert popup
         alert(responseData.message);
-
-        // After closing the popup, redirect the user to the homepage
-        // so they can see the new product in the list
-        navigate('/');
+        navigate('/'); // Redirect home to see the new product
       })
       .catch((error) => console.error('Error adding product:', error));
   };
 
-  // Handler for the form submission event
+  // PUT API call to UPDATE the selected product
+  const handleEditProduct = () => {
+    fetch(`${baseUrl}/products/update/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+      .then((response) => {
+        const responseData = response.json();
+        if (response.ok) return responseData;
+        throw responseData;
+      })
+      .then((responseData) => {
+        alert(responseData.message);
+        navigate(`/product-details/${id}`); // Back to the edited product's details
+      })
+      .catch((error) => console.error('Error updating product:', error));
+  };
+
+  // Submit handler: chooses edit or add mode based on the id
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); // Prevent the default page reload behavior
-    handleAddProduct(); // Call the API function instead of console.log
+    e.preventDefault();
+    if (id) {
+      handleEditProduct();
+    } else {
+      handleAddProduct();
+    }
   };
 
   return (
-    // Card-like container: border, shadow, rounded corners, padding, max-width, centered
     <div className="border border-gray-50 shadow-lg rounded-md p-10 max-w-5xl m-6 mx-auto">
-      {/* Page title */}
-      <h1 className="text-3xl font-semibold text-gray-800 mb-6">Add Product</h1>
+      {/* Conditional title based on the mode */}
+      <h1 className="text-3xl font-semibold text-gray-800 mb-6">
+        {id ? 'Edit Product' : 'Add Product'}
+      </h1>
 
-      {/* Form with a 2-column grid layout and spacing */}
       <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 mt-4">
         {/* Product Name Field */}
         <div className="flex flex-col gap-2">
@@ -111,7 +141,7 @@ const AddProducts = () => {
           />
         </div>
 
-        {/* Description Field (Textarea) */}
+        {/* Description Field */}
         <div className="flex flex-col gap-2">
           <label className="font-semibold text-gray-700">Description</label>
           <textarea
@@ -124,7 +154,7 @@ const AddProducts = () => {
           />
         </div>
 
-        {/* Submit Button: spans both columns, fixed width, centered */}
+        {/* Submit Button */}
         <button
           type="submit"
           className="col-span-2 w-[400px] mx-auto mt-4 bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600 transition font-semibold"
@@ -136,4 +166,4 @@ const AddProducts = () => {
   );
 };
 
-export default AddProducts;
+export default AddEditProducts;

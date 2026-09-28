@@ -2,10 +2,12 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setProducts } from '../store/productSlice';
-import type { RootState, Product } from '../store/productSlice';
+import type { Product } from '../store/productSlice';
+import type { RootState } from '../store/store';
 
 const Products = () => {
   const dispatch = useDispatch();
+  // Read products from the Redux store
   const products = useSelector((state: RootState) => state.products);
 
   useEffect(() => {
@@ -14,10 +16,9 @@ const Products = () => {
 
     fetch(`${baseUrl}/products`)
       .then((response) => {
-        if (!response.ok) {
-          throw new Error('Failed to fetch products');
-        }
-        return response.json();
+        const data = response.json();
+        if (response.ok) return data;
+        throw new Error('Failed to fetch products');
       })
       .then((data) => {
         // Store the fetched data in the Redux store
@@ -28,21 +29,18 @@ const Products = () => {
 
   return (
     <div>
-{/* Header row: title + Add Product button */}
-{/* items-center prevents flex items from stretching vertically */}
-<div className="flex justify-between items-center m-6">
-  <h1 className="text-3xl font-semibold text-gray-800">Products</h1>
-  
-  {/* Small button-style link, exactly like the course */}
-  <Link
-    to="/products/add"
-    className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 transition"
-  >
-    Add Product
-  </Link>
-</div>
+      {/* Header row: page title + Add Product button */}
+      <div className="flex justify-between items-center m-6">
+        <h1 className="text-3xl font-semibold text-gray-800">Products</h1>
+        <Link
+          to="/products/add"
+          className="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 transition"
+        >
+          Add Product
+        </Link>
+      </div>
 
-      {/* Render products only if they exist, otherwise show a message */}
+      {/* Render products only if they exist */}
       {products.length > 0 ? (
         <div className="flex gap-6 flex-wrap justify-center m-6">
           {products.map((product: Product) => (
@@ -80,4 +78,4 @@ const Products = () => {
   );
 };
 
-export default Products;
+export default Products; // ✅ THIS LINE WAS MISSING — never remove it!
