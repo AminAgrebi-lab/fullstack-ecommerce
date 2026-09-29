@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom'; // ✅ Added useNavigate
 import type { Product } from '../store/productSlice';
-import DeleteConfirmationModal from './DeleteConfirmationModal'; // ✅ Import the modal
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 const ProductDetails = () => {
   // Extract the dynamic 'id' from the URL parameters
   const { id } = useParams<{ id: string }>();
+
+  // Hook used to redirect the user after a successful deletion
+  const navigate = useNavigate();
 
   // State to store the single product fetched from the server
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ State to control the visibility of the delete confirmation modal
+  // Switch that controls the modal visibility (closed by default)
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   useEffect(() => {
@@ -36,11 +39,33 @@ const ProductDetails = () => {
       });
   }, [id]);
 
-  // ✅ Open the confirmation modal when the Delete button is clicked
+  // Opens the confirmation modal when the Delete button is clicked
   const handleModalOpen = () => setIsOpen(true);
 
-  // ✅ Close the modal (shared by the X button and the Cancel button)
+  // Closes the modal (shared by the X button and the Cancel button)
   const handleModalClose = () => setIsOpen(false);
+
+  // ✅ Calls the DELETE API to remove the product from the database
+  const handleDeleteProduct = () => {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
+    fetch(`${baseUrl}/products/${id}`, {
+      method: 'DELETE', // Delete operation requires the DELETE method explicitly
+    })
+      .then((response) => {
+        const data = response.json();
+        // If the request succeeded return the data, otherwise throw it as an error
+        if (response.ok) return data;
+        throw data;
+      })
+      .then((data) => {
+        // Show the success message sent by the backend in an alert popup
+        alert(data.message);
+        // After closing the popup, redirect home so the user sees the updated list
+        navigate('/');
+      })
+      .catch((err) => console.error('Error deleting product:', err));
+  };
 
   if (loading) {
     return <div className="text-center mt-10 text-xl text-blue-500">Loading product details...</div>;
@@ -56,7 +81,7 @@ const ProductDetails = () => {
   }
 
   return (
-    // ✅ Fragment wraps the two top-level elements: page content + modal
+    // Fragment wraps the two top-level elements: page content + modal
     <>
       <div className="max-w-4xl mx-auto p-6">
         {/* Back to products link */}
@@ -73,6 +98,7 @@ const ProductDetails = () => {
               alt={selectedProduct.name}
               className="w-full h-full object-cover"
               onError={(e) => {
+                // Fallback UI if the image fails to load
                 const target = e.target as HTMLImageElement;
                 target.style.display = 'none';
                 target.parentElement!.innerHTML = '<div class="flex items-center justify-center h-full bg-gray-200 text-6xl">🍎</div>';
@@ -96,7 +122,7 @@ const ProductDetails = () => {
                 Edit Product
               </Link>
 
-              {/* ✅ Delete button: opens the confirmation modal (no redirection) */}
+              {/* Delete button: opens the confirmation modal (no redirection) */}
               <button
                 type="button"
                 onClick={handleModalOpen}
@@ -109,8 +135,13 @@ const ProductDetails = () => {
         </div>
       </div>
 
-      {/* ✅ Render the modal only when isOpen is true (conditional rendering) */}
-      {isOpen && <DeleteConfirmationModal onClose={handleModalClose} />}
+      {/* ✅ Render the modal only when open, passing BOTH close and delete handlers */}
+      {isOpen && (
+        <DeleteConfirmationModal
+          onClose={handleModalClose}
+          handleDeleteProduct={handleDeleteProduct}
+        />
+      )}
     </>
   );
 };

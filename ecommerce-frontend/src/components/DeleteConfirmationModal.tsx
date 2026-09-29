@@ -1,11 +1,12 @@
-// Props interface: the modal receives the close handler from its parent
+// Props interface: the modal receives the close handler and the delete handler from its parent
 interface DeleteConfirmationModalProps {
   onClose: () => void;
+  handleDeleteProduct: () => void; // ✅ Function that calls the DELETE API
 }
 
-const DeleteConfirmationModal = ({ onClose }: DeleteConfirmationModalProps) => {
+const DeleteConfirmationModal = ({ onClose, handleDeleteProduct }: DeleteConfirmationModalProps) => {
   return (
-    // Fixed overlay: covers the whole screen, centers the modal, sits above all content
+    // Fixed overlay: covers the whole screen, centers the modal, floats above all content
     <div className="fixed inset-0 flex justify-center items-center z-50">
       
       {/* Backdrop: dark semi-transparent layer to differentiate the modal from the UI */}
@@ -31,9 +32,10 @@ const DeleteConfirmationModal = ({ onClose }: DeleteConfirmationModalProps) => {
 
           {/* Action buttons row: Delete and Cancel */}
           <div className="flex gap-4 mt-4 self-center">
-            {/* Delete button: will trigger the delete API in the next lecture */}
+            {/* ✅ Delete button: calls the DELETE API passed from the parent */}
             <button
               type="button"
+              onClick={handleDeleteProduct}
               className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 transition"
             >
               Delete
