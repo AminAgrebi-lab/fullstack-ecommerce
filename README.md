@@ -136,7 +136,3 @@ npm run dev        # App runs on http://localhost:5173
 ## 👤 Author
 
 **Amin Agrebi** — [GitHub](https://github.com/AminAgrebi-lab)
-
-## 📄 License
-
-This project is open source and available for learning purposes.
